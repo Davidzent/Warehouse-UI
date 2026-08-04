@@ -39,15 +39,20 @@ export function ReceiptForm({ token, purchaseOrder, role, onPosted }: ReceiptFor
     fetchLocations(token).then(setLocations).catch(setError)
   }, [token])
 
-  // Reset the inputs whenever a different PO is loaded.
-  useEffect(() => {
-    if (!purchaseOrder) return
+  // Reset the inputs whenever a different PO is loaded. Keyed on object
+  // identity, not poId: re-posting refetches the same order and the consumed
+  // quantities have to clear too. Adjusting during render rather than in an
+  // effect keeps the previous order's numbers from painting for a frame.
+  // `locations` and the carrier reference survive — they outlive one order.
+  const [loadedPo, setLoadedPo] = useState<PurchaseOrderDetail | null>(null)
+  if (purchaseOrder && purchaseOrder !== loadedPo) {
+    setLoadedPo(purchaseOrder)
     const next: Record<number, LineEntry> = {}
     for (const line of purchaseOrder.lines) next[line.poLineId] = emptyLine()
     setEntries(next)
     setResult(null)
     setError(null)
-  }, [purchaseOrder])
+  }
 
   function update(poLineId: number, field: keyof LineEntry, value: string) {
     setEntries((prev) => ({
