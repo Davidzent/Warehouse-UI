@@ -237,6 +237,11 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
               // over-shipment, so it warns; past the cap the problems list errors.
               const overExpected = received > line.remainingQuantity
 
+              // Column headers do not name a form control, so each one carries
+              // its own line context — three unlabelled number boxes per row are
+              // indistinguishable to a screen reader otherwise.
+              const forLine = `line ${line.lineNumber}, ${line.sku}`
+
               const errors = lineErrors[line.poLineId] ?? {}
               const errId = (field: keyof LineEntry) => `err-${field}-${line.poLineId}`
               const describe = (field: keyof LineEntry, ...base: string[]) =>
@@ -250,6 +255,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       type="number"
                       min="0"
                       value={entry.receiveNow}
+                      aria-label={`Receive now, ${forLine}`}
                       aria-invalid={!!errors.receiveNow}
                       aria-describedby={describe('receiveNow', capId, goodId)}
                       onChange={(e) => update(line.poLineId, 'receiveNow', e.target.value)}
@@ -277,6 +283,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       type="number"
                       min="0"
                       value={entry.damaged}
+                      aria-label={`Damaged, ${forLine}`}
                       aria-invalid={!!errors.damaged}
                       aria-describedby={describe('damaged', goodId)}
                       onChange={(e) => update(line.poLineId, 'damaged', e.target.value)}
@@ -300,6 +307,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                   <td>
                     <select
                       value={entry.locationId}
+                      aria-label={`Put-away location, ${forLine}`}
                       aria-invalid={!!errors.locationId}
                       aria-describedby={describe('locationId')}
                       onChange={(e) => update(line.poLineId, 'locationId', e.target.value)}
