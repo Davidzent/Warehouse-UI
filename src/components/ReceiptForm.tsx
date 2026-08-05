@@ -50,6 +50,15 @@ function mapFieldErrors(fieldErrors: Record<string, string>, submittedLineIds: n
 const emptyLine = (): LineEntry => ({ receiveNow: '0', damaged: '0', locationId: '' })
 
 /**
+ * A wheel over a focused number input edits it. Scrolling to reach the submit
+ * button would then silently change what was received, and the server cannot
+ * tell a mis-scroll from a real count — so drop focus and let the page scroll.
+ */
+function blurOnWheel(event: React.WheelEvent<HTMLInputElement>) {
+  event.currentTarget.blur()
+}
+
+/**
  * Damaged units still count as received — they physically arrived, and the PO's
  * running total is gross — but only received minus damaged becomes usable stock.
  */
@@ -214,7 +223,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
       <h2>Record receipt</h2>
 
       <form onSubmit={submit}>
-        <table border={1} cellPadding={4}>
+        <table>
           <thead>
             <tr>
               <th>#</th>
@@ -256,6 +265,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       min="0"
                       value={entry.receiveNow}
                       aria-label={`Receive now, ${forLine}`}
+                      onWheel={blurOnWheel}
                       aria-invalid={!!errors.receiveNow}
                       aria-describedby={describe('receiveNow', capId, goodId)}
                       onChange={(e) => update(line.poLineId, 'receiveNow', e.target.value)}
@@ -265,9 +275,9 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                         {errors.receiveNow}
                       </p>
                     )}
-                    <div id={capId}>
+                    <div id={capId} className="hint">
                       {overExpected ? (
-                        <strong>
+                        <strong className="warn">
                           {received - line.remainingQuantity} over the {line.remainingQuantity}{' '}
                           expected · max {line.maxReceivableNow}
                         </strong>
@@ -284,6 +294,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       min="0"
                       value={entry.damaged}
                       aria-label={`Damaged, ${forLine}`}
+                      onWheel={blurOnWheel}
                       aria-invalid={!!errors.damaged}
                       aria-describedby={describe('damaged', goodId)}
                       onChange={(e) => update(line.poLineId, 'damaged', e.target.value)}

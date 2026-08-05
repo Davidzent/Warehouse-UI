@@ -84,7 +84,7 @@ export function ReceiptPanel({ receiptId }: ReceiptPanelProps) {
             carrier {receipt.carrierReference ?? '—'} · notes {receipt.notes ?? '—'}
           </p>
 
-          <table border={1} cellPadding={4}>
+          <table>
             <thead>
               <tr>
                 <th>SKU</th>

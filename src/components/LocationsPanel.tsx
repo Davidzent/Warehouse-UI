@@ -37,7 +37,7 @@ export function LocationsPanel() {
       {locations?.length === 0 && <p>No locations are configured.</p>}
 
       {locations && locations.length > 0 && (
-        <table border={1} cellPadding={4}>
+        <table>
           <thead>
             <tr>
               <th>Code</th>

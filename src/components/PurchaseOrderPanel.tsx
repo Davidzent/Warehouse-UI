@@ -35,7 +35,12 @@ export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPan
       <h2>Purchase order</h2>
       <form onSubmit={load}>
         <label>
-          PO id <input value={poId} onChange={(e) => setPoId(e.target.value)} />
+          PO id{' '}
+          <input
+            inputMode="numeric"
+            value={poId}
+            onChange={(e) => setPoId(e.target.value)}
+          />
         </label>{' '}
         <button type="submit" disabled={busy}>
           {busy ? 'Loading…' : 'Load'}
@@ -62,7 +67,7 @@ export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPan
           {purchaseOrder.lines.length === 0 && <p>This order has no lines.</p>}
 
           {purchaseOrder.lines.length > 0 && (
-          <table border={1} cellPadding={4}>
+          <table>
             <thead>
               <tr>
                 <th>#</th>
