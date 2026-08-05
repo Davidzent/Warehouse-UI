@@ -36,19 +36,17 @@ export default function App() {
         <>
           <PurchaseOrderPanel
             key={refreshKey}
-            token={session.token}
             purchaseOrder={purchaseOrder}
             onLoaded={setPurchaseOrder}
           />
 
           <ReceiptForm
-            token={session.token}
             purchaseOrder={purchaseOrder}
             canReceive={session.canReceive}
             onPosted={handlePosted}
           />
 
-          <InventoryPanel token={session.token} refreshKey={refreshKey} />
+          <InventoryPanel refreshKey={refreshKey} />
         </>
       )}
     </main>

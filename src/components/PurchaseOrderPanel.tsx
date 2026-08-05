@@ -4,7 +4,6 @@ import type { PurchaseOrderDetail } from '../api/types'
 import { ErrorBanner } from './ErrorBanner'
 
 interface PurchaseOrderPanelProps {
-  token: string
   purchaseOrder: PurchaseOrderDetail | null
   onLoaded: (po: PurchaseOrderDetail | null) => void
 }
@@ -12,7 +11,7 @@ interface PurchaseOrderPanelProps {
 /**
  * Load a purchase order by id.
  */
-export function PurchaseOrderPanel({ token, purchaseOrder, onLoaded }: PurchaseOrderPanelProps) {
+export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPanelProps) {
   const [poId, setPoId] = useState('1000')
   const [error, setError] = useState<unknown>(null)
   const [busy, setBusy] = useState(false)
@@ -22,7 +21,7 @@ export function PurchaseOrderPanel({ token, purchaseOrder, onLoaded }: PurchaseO
     setBusy(true)
     setError(null)
     try {
-      onLoaded(await fetchPurchaseOrder(poId, token))
+      onLoaded(await fetchPurchaseOrder(poId))
     } catch (err) {
       setError(err)
       onLoaded(null)

@@ -32,7 +32,13 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError
 }
 
+let authToken: string | null = null
 let unauthorizedHandler: (() => void) | null = null
+
+/** Set by the auth module on sign-in, cleared on sign-out and on any 401. */
+export function setAuthToken(token: string | null) {
+  authToken = token
+}
 
 /**
  * The auth module registers here so that a 401 from any endpoint ends the
@@ -45,17 +51,14 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 interface RequestOptions {
   method?: 'GET' | 'POST'
   body?: unknown
-  token?: string
 }
 
 export async function request<T>(
   path: string,
-  { method = 'GET', body, token }: RequestOptions = {},
+  { method = 'GET', body }: RequestOptions = {},
 ): Promise<T> {
   const headers: Record<string, string> = {}
-  // The token is passed in explicitly rather than read from module state —
-  // it keeps this file free of auth logic and makes it trivial to test.
-  if (token) headers.Authorization = `Bearer ${token}`
+  if (authToken) headers.Authorization = `Bearer ${authToken}`
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
   const response = await fetch(`${BASE_URL}${path}`, {

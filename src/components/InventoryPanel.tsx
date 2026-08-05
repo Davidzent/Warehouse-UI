@@ -4,19 +4,18 @@ import type { InventoryRow } from '../api/types'
 import { ErrorBanner } from './ErrorBanner'
 
 interface InventoryPanelProps {
-  token: string
   /** Changes after a receipt is posted, which re-runs the fetch. */
   refreshKey: number
 }
 
 /** Current stock on hand, per product per location. */
-export function InventoryPanel({ token, refreshKey }: InventoryPanelProps) {
+export function InventoryPanel({ refreshKey }: InventoryPanelProps) {
   const [rows, setRows] = useState<InventoryRow[]>([])
   const [error, setError] = useState<unknown>(null)
 
   const load = useCallback(() => {
-    fetchInventory(token).then(setRows).catch(setError)
-  }, [token])
+    fetchInventory().then(setRows).catch(setError)
+  }, [])
 
   useEffect(() => {
     load()

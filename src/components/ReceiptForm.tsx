@@ -13,7 +13,6 @@ interface LineEntry {
 const emptyLine = (): LineEntry => ({ receiveNow: '0', damaged: '0', locationId: '' })
 
 interface ReceiptFormProps {
-  token: string
   purchaseOrder: PurchaseOrderDetail | null
   canReceive: boolean
   onPosted?: () => void
@@ -22,7 +21,7 @@ interface ReceiptFormProps {
 /**
  * Record a delivery against the loaded purchase order.
  */
-export function ReceiptForm({ token, purchaseOrder, canReceive, onPosted }: ReceiptFormProps) {
+export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptFormProps) {
   const [entries, setEntries] = useState<Record<number, LineEntry>>({})
   const [locations, setLocations] = useState<Location[]>([])
   const [carrierReference, setCarrierReference] = useState('')
@@ -31,8 +30,8 @@ export function ReceiptForm({ token, purchaseOrder, canReceive, onPosted }: Rece
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    fetchLocations(token).then(setLocations).catch(setError)
-  }, [token])
+    fetchLocations().then(setLocations).catch(setError)
+  }, [])
 
   // Reset the line inputs when a different PO loads. Compared by identity, not
   // poId: re-posting refetches the same order and its quantities must clear too.
@@ -97,15 +96,12 @@ export function ReceiptForm({ token, purchaseOrder, canReceive, onPosted }: Rece
       }))
 
     try {
-      const response = await postReceipt(
-        {
-          purchaseOrderId: purchaseOrder.poId,
-          carrierReference: carrierReference || null,
-          notes: null,
-          lines,
-        },
-        token,
-      )
+      const response = await postReceipt({
+        purchaseOrderId: purchaseOrder.poId,
+        carrierReference: carrierReference || null,
+        notes: null,
+        lines,
+      })
       setResult(response)
       onPosted?.()
     } catch (err) {
