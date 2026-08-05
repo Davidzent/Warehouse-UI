@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchLocations, postReceipt } from '../api/receiving'
-import type {
-  Location,
-  PurchaseOrderDetail,
-  ReceiptResponse,
-  Role,
-} from '../api/types'
+import type { Location, PurchaseOrderDetail, ReceiptResponse } from '../api/types'
 import { ErrorBanner } from './ErrorBanner'
 
 /** Per-line form state. Strings because inputs produce strings. */
@@ -20,14 +15,14 @@ const emptyLine = (): LineEntry => ({ receiveNow: '0', damaged: '0', locationId:
 interface ReceiptFormProps {
   token: string
   purchaseOrder: PurchaseOrderDetail | null
-  role: Role
+  canReceive: boolean
   onPosted?: () => void
 }
 
 /**
  * Record a delivery against the loaded purchase order.
  */
-export function ReceiptForm({ token, purchaseOrder, role, onPosted }: ReceiptFormProps) {
+export function ReceiptForm({ token, purchaseOrder, canReceive, onPosted }: ReceiptFormProps) {
   const [entries, setEntries] = useState<Record<number, LineEntry>>({})
   const [locations, setLocations] = useState<Location[]>([])
   const [carrierReference, setCarrierReference] = useState('')
@@ -122,7 +117,7 @@ export function ReceiptForm({ token, purchaseOrder, role, onPosted }: ReceiptFor
 
   if (!purchaseOrder) return null
 
-  const canSubmit = role === 'CLERK' && problems.length === 0 && !busy
+  const canSubmit = canReceive && problems.length === 0 && !busy
 
   return (
     <section>
@@ -196,12 +191,12 @@ export function ReceiptForm({ token, purchaseOrder, role, onPosted }: ReceiptFor
             {problem}
           </p>
         ))}
-        {role === 'CLERK' ? (
+        {canReceive ? (
           <button type="submit" disabled={!canSubmit}>
             {busy ? 'Posting…' : 'Post receipt'}
           </button>
         ) : (
-          <p>Signed in as VIEWER — posting is a clerk action.</p>
+          <p>Your role does not permit posting receipts.</p>
         )}
       </form>
 

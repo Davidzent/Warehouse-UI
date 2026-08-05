@@ -22,7 +22,7 @@ export function LoginPanel({ session, onSignIn, onSignOut, busy, error }: LoginP
       <section>
         <h2>Session</h2>
         <p>
-          Signed in as <strong>{session.username}</strong> ({session.role})
+          Signed in as <strong>{session.username}</strong> ({session.roles.join(', ')})
         </p>
         <button onClick={onSignOut}>Sign out</button>
       </section>

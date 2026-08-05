@@ -44,7 +44,7 @@ export default function App() {
           <ReceiptForm
             token={session.token}
             purchaseOrder={purchaseOrder}
-            role={session.role}
+            canReceive={session.canReceive}
             onPosted={handlePosted}
           />
 

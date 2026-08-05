@@ -23,9 +23,19 @@ export default defineConfig(({ command, mode }) => {
 
     server: {
       port: Number(process.env.PORT) || 5176,
-      // Same-origin /api in dev, so the API needs no CORS config.
       proxy: apiTarget
-        ? { '/api': { target: apiTarget, changeOrigin: true } }
+        ? {
+            '/api': {
+              target: apiTarget,
+              changeOrigin: true,
+              // The API's CORS allowlist holds production origins only, so a
+              // forwarded browser Origin is rejected. Dropping it makes the
+              // request genuinely same-origin, which is the point of the proxy.
+              configure: (proxy) => {
+                proxy.on('proxyReq', (proxyReq) => proxyReq.removeHeader('origin'))
+              },
+            },
+          }
         : undefined,
     },
 
