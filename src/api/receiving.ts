@@ -7,6 +7,7 @@ import type {
   InventoryRow,
   Location,
   PurchaseOrderDetail,
+  ReceiptDetail,
   ReceiptRequest,
   ReceiptResponse,
   Role,
@@ -24,6 +25,10 @@ export function fetchDevToken(username: string, role: Role) {
 
 export function fetchPurchaseOrder(poId: string | number) {
   return request<PurchaseOrderDetail>(`/api/purchase-orders/${poId}`)
+}
+
+export function fetchReceipt(receiptId: string | number) {
+  return request<ReceiptDetail>(`/api/receipts/${receiptId}`)
 }
 
 export function fetchLocations() {

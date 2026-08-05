@@ -92,6 +92,31 @@ export interface ReceiptResponse {
   lines: ReceiptResponseLine[]
 }
 
+/**
+ * GET /api/receipts/{id} is not the shape POST returns: it adds the receipt
+ * line id, location code, carrier and notes, and drops goodQuantity and the
+ * resulting PO status. Good units have to be derived again from received.
+ */
+export interface ReceiptDetailLine {
+  receiptLineId: number
+  poLineId: number
+  sku: string
+  locationId: number
+  locationCode: string
+  quantityReceived: number
+  quantityDamaged: number
+}
+
+export interface ReceiptDetail {
+  receiptId: number
+  purchaseOrderId: number
+  receivedBy: string
+  receivedAt: string
+  carrierReference: string | null
+  notes: string | null
+  lines: ReceiptDetailLine[]
+}
+
 /** RFC 7807 ProblemDetail, as returned by ApiExceptionHandler. */
 export interface ProblemDetail {
   type?: string

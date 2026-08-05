@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { isApiError } from '../api/client'
 import { fetchLocations, postReceipt } from '../api/receiving'
-import type { Location, PurchaseOrderDetail, ReceiptResponse } from '../api/types'
+import type { Location, PoStatus, PurchaseOrderDetail, ReceiptResponse } from '../api/types'
 import { ErrorBanner } from './ErrorBanner'
 
 /** Per-line form state. Strings because inputs produce strings. */
@@ -59,10 +59,21 @@ function quantities(entry: LineEntry | undefined) {
   return { received, damaged, good: received - damaged }
 }
 
+function notReceivableReason(status: PoStatus): string {
+  switch (status) {
+    case 'CANCELLED':
+      return 'it was cancelled'
+    case 'CLOSED':
+      return 'every ordered line has already been received in full'
+    default:
+      return `its status is ${status}`
+  }
+}
+
 interface ReceiptFormProps {
   purchaseOrder: PurchaseOrderDetail | null
   canReceive: boolean
-  onPosted?: () => void
+  onPosted?: (receiptId: number) => void
 }
 
 /**
@@ -162,7 +173,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
         lines,
       })
       setResult(response)
-      onPosted?.()
+      onPosted?.(response.receiptId)
     } catch (err) {
       if (isApiError(err) && err.fieldErrors) {
         const mapped = mapFieldErrors(
@@ -180,6 +191,21 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
   }
 
   if (!purchaseOrder) return null
+
+  // The header flag is the only gate. Lines on a closed order still report
+  // headroom under the 110% cap — PO-1002 says 1 — and that is arithmetic,
+  // not permission.
+  if (!purchaseOrder.receivable) {
+    return (
+      <section>
+        <h2>Record receipt</h2>
+        <p>
+          <strong>{purchaseOrder.poNumber}</strong> cannot accept deliveries because{' '}
+          {notReceivableReason(purchaseOrder.status)}.
+        </p>
+      </section>
+    )
+  }
 
   const canSubmit = canReceive && problems.length === 0 && !busy
 
