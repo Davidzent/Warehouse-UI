@@ -12,6 +12,16 @@ interface LineEntry {
 
 const emptyLine = (): LineEntry => ({ receiveNow: '0', damaged: '0', locationId: '' })
 
+/**
+ * Damaged units still count as received — they physically arrived, and the PO's
+ * running total is gross — but only received minus damaged becomes usable stock.
+ */
+function quantities(entry: LineEntry | undefined) {
+  const received = Number(entry?.receiveNow) || 0
+  const damaged = Number(entry?.damaged) || 0
+  return { received, damaged, good: received - damaged }
+}
+
 interface ReceiptFormProps {
   purchaseOrder: PurchaseOrderDetail | null
   canReceive: boolean
@@ -60,8 +70,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
     for (const line of purchaseOrder.lines) {
       const entry = entries[line.poLineId]
       if (!entry) continue
-      const received = Number(entry.receiveNow) || 0
-      const damaged = Number(entry.damaged) || 0
+      const { received, damaged } = quantities(entry)
       if (received > 0) anyQuantity = true
       if (damaged > received) {
         found.push(`Line ${line.lineNumber}: damaged (${damaged}) exceeds received (${received})`)
@@ -127,12 +136,15 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
               <th>SKU</th>
               <th>Receive now</th>
               <th>Damaged</th>
+              <th>Good → stock</th>
               <th>Put-away location</th>
             </tr>
           </thead>
           <tbody>
             {purchaseOrder.lines.map((line) => {
               const entry = entries[line.poLineId] ?? emptyLine()
+              const { received, damaged, good } = quantities(entry)
+              const goodId = `good-${line.poLineId}`
               return (
                 <tr key={line.poLineId}>
                   <td>{line.lineNumber}</td>
@@ -142,6 +154,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       type="number"
                       min="0"
                       value={entry.receiveNow}
+                      aria-describedby={goodId}
                       onChange={(e) => update(line.poLineId, 'receiveNow', e.target.value)}
                     />
                   </td>
@@ -150,8 +163,19 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       type="number"
                       min="0"
                       value={entry.damaged}
+                      aria-describedby={goodId}
                       onChange={(e) => update(line.poLineId, 'damaged', e.target.value)}
                     />
+                  </td>
+                  <td id={goodId}>
+                    {received === 0 || good < 0 ? (
+                      '—'
+                    ) : (
+                      <>
+                        <strong>{good}</strong>
+                        {damaged > 0 && ` (${received} received − ${damaged} damaged)`}
+                      </>
+                    )}
                   </td>
                   <td>
                     <select
