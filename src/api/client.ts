@@ -32,6 +32,16 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError
 }
 
+let unauthorizedHandler: (() => void) | null = null
+
+/**
+ * The auth module registers here so that a 401 from any endpoint ends the
+ * session in one place, rather than every call site remembering to check.
+ */
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler
+}
+
 interface RequestOptions {
   method?: 'GET' | 'POST'
   body?: unknown
@@ -59,6 +69,9 @@ export async function request<T>(
   const payload = text ? safeParse(text) : null
 
   if (!response.ok) {
+    // 401 comes back with an empty body, so there is nothing to show the user —
+    // the handler replaces it with a message and a way back in.
+    if (response.status === 401) unauthorizedHandler?.()
     throw new ApiError({ ...payload, status: response.status })
   }
   return payload as T

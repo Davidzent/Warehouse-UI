@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { setUnauthorizedHandler } from '../api/client'
 import { fetchDevToken } from '../api/receiving'
 import type { Role } from '../api/types'
 import { decodeToken, RECEIVING_ROLE } from './token'
@@ -41,6 +42,15 @@ export function useAuth() {
     sessionStorage.removeItem(STORAGE_KEY)
     setSession(null)
     setError(null)
+  }, [])
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      sessionStorage.removeItem(STORAGE_KEY)
+      setSession(null)
+      setError('Your session is no longer valid. Sign in again.')
+    })
+    return () => setUnauthorizedHandler(null)
   }, [])
 
   return { session, signIn, signOut, error, busy }
