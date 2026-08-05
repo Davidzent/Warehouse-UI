@@ -21,16 +21,6 @@ export function ErrorBanner({ error }: { error: unknown }) {
         {error.status} {error.title ?? ''}
       </strong>
       <p>{error.detail}</p>
-
-      {error.fieldErrors && (
-        <ul>
-          {Object.entries(error.fieldErrors).map(([field, message]) => (
-            <li key={field}>
-              <code>{field}</code>: {message}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   )
 }

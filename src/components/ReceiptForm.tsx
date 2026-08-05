@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { isApiError } from '../api/client'
 import { fetchLocations, postReceipt } from '../api/receiving'
 import type { Location, PurchaseOrderDetail, ReceiptResponse } from '../api/types'
 import { ErrorBanner } from './ErrorBanner'
@@ -8,6 +9,42 @@ interface LineEntry {
   receiveNow: string
   damaged: string
   locationId: string
+}
+
+type LineErrors = Partial<Record<keyof LineEntry, string>>
+
+/**
+ * Server field names to the inputs that produce them. `damagedWithinReceived`
+ * is the @AssertTrue getter, not a field — without this alias the one error a
+ * clerk hits most would land on no input at all.
+ */
+const FIELD_TO_INPUT: Record<string, keyof LineEntry> = {
+  quantityReceived: 'receiveNow',
+  quantityDamaged: 'damaged',
+  damagedWithinReceived: 'damaged',
+  locationId: 'locationId',
+}
+
+/**
+ * `lines[n]` indexes the array as submitted, which is why the caller passes the
+ * ids in that order. Anything unrecognised is surfaced rather than dropped.
+ */
+function mapFieldErrors(fieldErrors: Record<string, string>, submittedLineIds: number[]) {
+  const lines: Record<number, LineErrors> = {}
+  const form: string[] = []
+
+  for (const [key, message] of Object.entries(fieldErrors)) {
+    const match = /^lines\[(\d+)\]\.(.+)$/.exec(key)
+    const poLineId = match ? submittedLineIds[Number(match[1])] : undefined
+    const input = match ? FIELD_TO_INPUT[match[2]] : undefined
+
+    if (poLineId !== undefined && input) {
+      lines[poLineId] = { ...lines[poLineId], [input]: message }
+    } else {
+      form.push(message)
+    }
+  }
+  return { lines, form }
 }
 
 const emptyLine = (): LineEntry => ({ receiveNow: '0', damaged: '0', locationId: '' })
@@ -36,6 +73,8 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
   const [locations, setLocations] = useState<Location[]>([])
   const [carrierReference, setCarrierReference] = useState('')
   const [error, setError] = useState<unknown>(null)
+  const [lineErrors, setLineErrors] = useState<Record<number, LineErrors>>({})
+  const [formErrors, setFormErrors] = useState<string[]>([])
   const [result, setResult] = useState<ReceiptResponse | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -53,6 +92,8 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
     setEntries(next)
     setResult(null)
     setError(null)
+    setLineErrors({})
+    setFormErrors([])
   }
 
   function update(poLineId: number, field: keyof LineEntry, value: string) {
@@ -60,6 +101,13 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
       ...prev,
       [poLineId]: { ...(prev[poLineId] ?? emptyLine()), [field]: value },
     }))
+
+    // The server's verdict on this field is stale the moment it is edited.
+    setLineErrors((prev) => {
+      if (!prev[poLineId]?.[field]) return prev
+      const { [field]: _cleared, ...rest } = prev[poLineId]
+      return { ...prev, [poLineId]: rest }
+    })
   }
 
   const problems = useMemo(() => {
@@ -94,6 +142,8 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
     setBusy(true)
     setError(null)
     setResult(null)
+    setLineErrors({})
+    setFormErrors([])
 
     const lines = purchaseOrder.lines
       .filter((line) => Number(entries[line.poLineId]?.receiveNow) > 0)
@@ -114,7 +164,16 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
       setResult(response)
       onPosted?.()
     } catch (err) {
-      setError(err)
+      if (isApiError(err) && err.fieldErrors) {
+        const mapped = mapFieldErrors(
+          err.fieldErrors,
+          lines.map((line) => line.poLineId),
+        )
+        setLineErrors(mapped.lines)
+        setFormErrors(mapped.form)
+      } else {
+        setError(err)
+      }
     } finally {
       setBusy(false)
     }
@@ -151,6 +210,11 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
               // the headroom under the 110% cap. Between the two is a legitimate
               // over-shipment, so it warns; past the cap the problems list errors.
               const overExpected = received > line.remainingQuantity
+
+              const errors = lineErrors[line.poLineId] ?? {}
+              const errId = (field: keyof LineEntry) => `err-${field}-${line.poLineId}`
+              const describe = (field: keyof LineEntry, ...base: string[]) =>
+                [...base, errors[field] && errId(field)].filter(Boolean).join(' ') || undefined
               return (
                 <tr key={line.poLineId}>
                   <td>{line.lineNumber}</td>
@@ -160,9 +224,15 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       type="number"
                       min="0"
                       value={entry.receiveNow}
-                      aria-describedby={`${capId} ${goodId}`}
+                      aria-invalid={!!errors.receiveNow}
+                      aria-describedby={describe('receiveNow', capId, goodId)}
                       onChange={(e) => update(line.poLineId, 'receiveNow', e.target.value)}
                     />
+                    {errors.receiveNow && (
+                      <p id={errId('receiveNow')} role="alert">
+                        {errors.receiveNow}
+                      </p>
+                    )}
                     <div id={capId}>
                       {overExpected ? (
                         <strong>
@@ -181,9 +251,15 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       type="number"
                       min="0"
                       value={entry.damaged}
-                      aria-describedby={goodId}
+                      aria-invalid={!!errors.damaged}
+                      aria-describedby={describe('damaged', goodId)}
                       onChange={(e) => update(line.poLineId, 'damaged', e.target.value)}
                     />
+                    {errors.damaged && (
+                      <p id={errId('damaged')} role="alert">
+                        {errors.damaged}
+                      </p>
+                    )}
                   </td>
                   <td id={goodId}>
                     {received === 0 || good < 0 ? (
@@ -198,6 +274,8 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                   <td>
                     <select
                       value={entry.locationId}
+                      aria-invalid={!!errors.locationId}
+                      aria-describedby={describe('locationId')}
                       onChange={(e) => update(line.poLineId, 'locationId', e.target.value)}
                     >
                       <option value="">—</option>
@@ -207,6 +285,11 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                         </option>
                       ))}
                     </select>
+                    {errors.locationId && (
+                      <p id={errId('locationId')} role="alert">
+                        {errors.locationId}
+                      </p>
+                    )}
                   </td>
                 </tr>
               )
@@ -224,7 +307,7 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
           </label>
         </p>
 
-        {problems.map((problem) => (
+        {[...problems, ...formErrors].map((problem) => (
           <p key={problem} role="alert">
             {problem}
           </p>
