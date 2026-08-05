@@ -8,6 +8,7 @@ export const RECEIVING_ROLE = 'WAREHOUSE_CLERK'
 export interface TokenClaims {
   subject: string
   roles: string[]
+  expiresAt: number
 }
 
 /**
@@ -22,12 +23,13 @@ export function decodeToken(token: string): TokenClaims | null {
     const claims: unknown = JSON.parse(decodeSegment(payload))
     if (typeof claims !== 'object' || claims === null) return null
 
-    const { sub, roles } = claims as { sub?: unknown; roles?: unknown }
-    if (typeof sub !== 'string') return null
+    const { sub, roles, exp } = claims as { sub?: unknown; roles?: unknown; exp?: unknown }
+    if (typeof sub !== 'string' || typeof exp !== 'number') return null
 
     return {
       subject: sub,
       roles: Array.isArray(roles) ? roles.filter((r) => typeof r === 'string') : [],
+      expiresAt: exp * 1000, // exp counts seconds; the rest of the app works in millis
     }
   } catch {
     return null
