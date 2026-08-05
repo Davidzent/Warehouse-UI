@@ -37,10 +37,11 @@ export function ReceiptPanel({ receiptId }: ReceiptPanelProps) {
   if (receiptId !== null && receiptId !== shownReceiptId) {
     setShownReceiptId(receiptId)
     setLookupId(String(receiptId))
+    setBusy(true)
   }
 
   useEffect(() => {
-    if (receiptId !== null) show(receiptId)
+    if (receiptId !== null) show(receiptId).finally(() => setBusy(false))
   }, [receiptId, show])
 
   function submit(e: React.FormEvent) {
@@ -69,6 +70,7 @@ export function ReceiptPanel({ receiptId }: ReceiptPanelProps) {
 
       <ErrorBanner error={error} />
 
+      {busy && <p>Loading receipt…</p>}
       {!receipt && !error && !busy && <p>No receipt loaded.</p>}
 
       {receipt && (

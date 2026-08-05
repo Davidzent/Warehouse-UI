@@ -10,11 +10,22 @@ interface InventoryPanelProps {
 
 /** Current stock on hand, per product per location. */
 export function InventoryPanel({ refreshKey }: InventoryPanelProps) {
-  const [rows, setRows] = useState<InventoryRow[]>([])
+  // null until the first response, so an empty warehouse is not mistaken for
+  // one that is still loading.
+  const [rows, setRows] = useState<InventoryRow[] | null>(null)
   const [error, setError] = useState<unknown>(null)
 
   const load = useCallback(() => {
-    fetchInventory().then(setRows).catch(setError)
+    fetchInventory().then(
+      (loaded) => {
+        setRows(loaded)
+        setError(null)
+      },
+      (failure) => {
+        setRows(null)
+        setError(failure)
+      },
+    )
   }, [])
 
   useEffect(() => {
@@ -27,26 +38,32 @@ export function InventoryPanel({ refreshKey }: InventoryPanelProps) {
         Inventory <button onClick={load}>Refresh</button>
       </h2>
       <ErrorBanner error={error} />
-      <table border={1} cellPadding={4}>
-        <thead>
-          <tr>
-            <th>SKU</th>
-            <th>Description</th>
-            <th>Location</th>
-            <th>On hand</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.inventoryId}>
-              <td>{row.sku}</td>
-              <td>{row.productDescription}</td>
-              <td>{row.locationCode}</td>
-              <td>{row.quantityOnHand}</td>
+
+      {!rows && !error && <p>Loading stock…</p>}
+      {rows?.length === 0 && <p>Nothing in stock yet.</p>}
+
+      {rows && rows.length > 0 && (
+        <table border={1} cellPadding={4}>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Description</th>
+              <th>Location</th>
+              <th>On hand</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.inventoryId}>
+                <td>{row.sku}</td>
+                <td>{row.productDescription}</td>
+                <td>{row.locationCode}</td>
+                <td>{row.quantityOnHand}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   )
 }

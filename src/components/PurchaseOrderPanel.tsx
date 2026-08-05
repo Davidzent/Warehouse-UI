@@ -44,6 +44,9 @@ export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPan
 
       <ErrorBanner error={error} />
 
+      {busy && <p>Loading purchase order…</p>}
+      {!purchaseOrder && !error && !busy && <p>Enter a purchase order id to look one up.</p>}
+
       {purchaseOrder && (
         <>
           <p>
@@ -56,6 +59,9 @@ export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPan
             created by {purchaseOrder.createdBy}
           </p>
 
+          {purchaseOrder.lines.length === 0 && <p>This order has no lines.</p>}
+
+          {purchaseOrder.lines.length > 0 && (
           <table border={1} cellPadding={4}>
             <thead>
               <tr>
@@ -82,6 +88,7 @@ export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPan
               ))}
             </tbody>
           </table>
+          )}
         </>
       )}
     </section>
