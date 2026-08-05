@@ -145,6 +145,12 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
               const entry = entries[line.poLineId] ?? emptyLine()
               const { received, damaged, good } = quantities(entry)
               const goodId = `good-${line.poLineId}`
+              const capId = `cap-${line.poLineId}`
+
+              // remainingQuantity is what is still expected; maxReceivableNow is
+              // the headroom under the 110% cap. Between the two is a legitimate
+              // over-shipment, so it warns; past the cap the problems list errors.
+              const overExpected = received > line.remainingQuantity
               return (
                 <tr key={line.poLineId}>
                   <td>{line.lineNumber}</td>
@@ -154,9 +160,21 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                       type="number"
                       min="0"
                       value={entry.receiveNow}
-                      aria-describedby={goodId}
+                      aria-describedby={`${capId} ${goodId}`}
                       onChange={(e) => update(line.poLineId, 'receiveNow', e.target.value)}
                     />
+                    <div id={capId}>
+                      {overExpected ? (
+                        <strong>
+                          {received - line.remainingQuantity} over the {line.remainingQuantity}{' '}
+                          expected · max {line.maxReceivableNow}
+                        </strong>
+                      ) : (
+                        <>
+                          {line.remainingQuantity} expected · max {line.maxReceivableNow}
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <input
