@@ -31,31 +31,56 @@ against a **Supabase** Postgres database.
 
 ## What it does
 
-- **Sign in for a dev token** as `WAREHOUSE_CLERK` (may post receipts) or `VIEWER`
-  (read only). Role comes back in the token and gates the UI.
-- **Pull up a purchase order** and see ordered vs. already-received vs. remaining
-  per line, plus the maximum still receivable right now.
-- **Record a receipt line by line** — quantity received, damaged count, and
-  destination location — with client-side checks before anything is posted.
-- **Watch inventory move.** Posting refreshes the running totals and the PO's status.
+- **Sign in for a development token** as a clerk or a viewer. The role that gates the
+  UI is read from the token's own `roles` claim rather than the response that carried
+  it — the endpoint accepts `CLERK` but mints `WAREHOUSE_CLERK`, and only the second
+  one authorises a post.
+- **Look up a purchase order by id.** The API exposes no list or search route, so this
+  is a lookup, not a browse. Each line shows what was ordered, what has already
+  arrived, what is still expected, and how many more units the 110% over-receipt rule
+  will accept right now.
+- **Record a delivery line by line** — quantity, damaged count, put-away location. As
+  the clerk types, every line shows what actually becomes stock: damaged units count
+  as received, because they did arrive, but they never reach inventory. That split is
+  the rule people get wrong, so it carries the most visual weight on the screen.
+- **Read-only when an order can't take a delivery.** A closed or cancelled PO says
+  which it is instead of offering a form the server would reject.
+- **Confirm what was recorded** by receipt id, and watch stock and locations follow.
 
 ## How it's built
 
-- **React 19 + TypeScript on Vite**, strict mode, no state library — plain hooks.
-- **One network module** ([`src/api/client.ts`](src/api/client.ts)) owns everything
-  the rest of the app shouldn't repeat: attaching the bearer token, deciding what
-  counts as failure, and turning the API's RFC 7807 `ProblemDetail` bodies into a
-  typed `ApiError`. Field-level errors from the server render straight onto the
-  matching inputs.
-- **Receipt form state is derived, not synchronised.** Loading a different PO resets
-  the line inputs during render rather than in an effect, so the form never paints a
-  frame of the previous order's numbers.
+- **React 19 + TypeScript on Vite**, strict mode, no state library and no router —
+  five panels with no list routes to link between.
+- **One network module** ([`src/api/client.ts`](src/api/client.ts)) owns everything the
+  rest of the app shouldn't repeat: the base URL, attaching the bearer token, deciding
+  what counts as failure, and turning the API's RFC 7807 `ProblemDetail` bodies into a
+  typed `ApiError`.
+- **Auth lives in one directory.** [`src/auth/`](src/auth) acquires the token, decodes
+  its claims, stores it, hands it to the client, and clears it — on sign-out and on any
+  `401`. No component ever receives a token, so swapping the development endpoint for a
+  real identity provider touches this directory and nothing else. It is a shared-secret
+  HS256 token, so it lives in `sessionStorage` and dies with the tab.
+- **Errors are translated, never dumped.** Field errors render on the input that caused
+  them — including `damagedWithinReceived`, which is named after a Bean Validation
+  getter and matches no field on the form. Everything else becomes a sentence: a
+  business conflict is passed through verbatim, because the server writes those for
+  people, and a `500` never surfaces what actually broke.
+- **Receipt form state is derived, not synchronised.** Loading a different PO resets the
+  line inputs during render rather than in an effect, so the form never paints a frame
+  of the previous order's numbers.
+- **Colour carries exactly one meaning.** Green, amber and red are reserved for stock
+  disposition; interaction colour sits outside that range so a focus ring can never be
+  read as a signal.
+- **Built for a dock, not a desk.** 44px targets, visible keyboard focus, no motion,
+  every control named, and quantity fields that ignore the scroll wheel — a mis-scroll
+  over a focused number input silently changes what gets received, and the server
+  cannot tell that from a real count.
 
 ## Configuration
 
 | Variable | When | What it does |
 |---|---|---|
-| `VITE_API_TARGET` | dev | Origin the dev server proxies `/api` to. Keeps requests same-origin so the API needs no CORS setup. |
+| `VITE_API_TARGET` | dev | Origin the dev server proxies `/api` to. The proxy also strips the browser's `Origin` header: the API's CORS allowlist holds production origins only, so a forwarded one is rejected. Removing it makes the request genuinely same-origin, which is the point of proxying. |
 | `VITE_API_BASE_URL` | production | Absolute origin of the deployed API. **The build fails in CI if this is empty** — an empty value would aim every request at the hosting origin, which serves no API. |
 
 Copy [`.env.example`](.env.example) to `.env.local` for local development.
@@ -73,6 +98,13 @@ pnpm --filter warehouse dev
 ```
 
 Then open <http://localhost:5176/warehouse/> (override the port with `PORT`).
+
+The API has to be running on `http://localhost:8080` under its `dev` profile — that
+profile is what exposes the token endpoint:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
 ---
 
