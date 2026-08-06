@@ -1,36 +1,60 @@
 :root {
-  --bg: #fff;
-  --surface: #f2f2f4;
-  --text: #14131a;
-  --muted: #55525f;
-  /* Dark enough to clear 3:1 — these dividers carry the grid structure. */
-  --border: #83808d;
-  --accent: #6b21a8;
-  --danger: #a3121f;
-  --warning: #7a4400;
-  --warning-bg: #fdf3e0;
+  /* Chrome. Cool greys — this is a steel-and-concrete room, not a warm one. */
+  --paper: #eef1f6;
+  --surface: #fff;
+  --surface-2: #f6f8fb;
+  --ink: #10141b;
+  --ink-2: #545d6b;
+  --rule: #868e9d;
+  --rule-soft: #dfe4ea;
+
+  /* Interaction. Deliberately outside the status range below, so a focus ring
+     can never be misread as a stock signal. */
+  --focus: #5b21b6;
+  --action: #1b2330;
+  --action-ink: #fff;
+
+  /* Stock disposition. These three appear nowhere else in the UI. */
+  --good: #10683a;
+  --good-soft: #d8f0e2;
+  --warn: #8d5406;
+  --warn-soft: #fbedd2;
+  --blocked: #a51726;
+  --blocked-soft: #fbdfe2;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
   font: 16px/1.5 var(--sans);
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  color-scheme: light;
+  color: var(--ink);
+  background: var(--paper);
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14151a;
-    --surface: #22242c;
-    --text: #f2f3f5;
-    --muted: #b3b6c0;
-    --border: #74788a;
-    --accent: #c9a2ff;
-    --danger: #ff9ca6;
-    --warning: #ffc46b;
-    --warning-bg: #33270f;
-  }
+/* data-theme is stamped by theme.ts, which resolves the "auto" setting against
+   the OS. Declared once here rather than mirrored in a media query. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --paper: #0e1115;
+  --surface: #171b21;
+  --surface-2: #1f252d;
+  --ink: #eef1f5;
+  --ink-2: #a3adbb;
+  --rule: #6e7889;
+  --rule-soft: #2b323c;
+
+  --focus: #c4a2ff;
+  --action: #2b333f;
+  --action-ink: #f4f6f9;
+
+  --good: #4fcd7c;
+  --good-soft: #10301f;
+  --warn: #edad3c;
+  --warn-soft: #33260c;
+  --blocked: #ff8b95;
+  --blocked-soft: #381518;
 }
 
 *,
@@ -43,114 +67,351 @@ body {
   margin: 0;
 }
 
-#root {
-  max-width: 1400px;
+/* ---- shell ---------------------------------------------------------- */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+}
+
+.brand {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.brand span {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 8px;
+  color: var(--ink-2);
+}
+
+.theme-toggle:hover {
+  color: var(--ink);
+}
+
+.workspace {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  padding: 16px;
+  max-width: 1600px;
   margin: 0 auto;
+}
+
+@media (min-width: 1100px) {
+  .workspace {
+    /* Reference data sits beside the task, not below it — a clerk should never
+       scroll past stock levels to reach the form. */
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+.sign-in {
+  max-width: 460px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* ---- panels --------------------------------------------------------- */
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--rule-soft);
+  border-radius: 8px;
   padding: 16px;
 }
 
 h1 {
-  font-size: 24px;
-  margin: 0 0 16px;
+  font-size: 16px;
+  margin: 0 0 12px;
 }
 
+/* Panel titles read as captions on a form, not headlines. */
 h2 {
-  font-size: 18px;
-  margin: 0 0 12px;
   display: flex;
   align-items: center;
   gap: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule-soft);
 }
 
 p {
   margin: 0 0 8px;
 }
 
-section {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 16px;
-  margin-bottom: 16px;
+p:last-child {
+  margin-bottom: 0;
 }
+
+.meta {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+/* ---- controls ------------------------------------------------------- */
 
 label {
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
 }
 
-/* Gloved hands on a touch terminal: nothing smaller than 44px, and never
-   below 16px type, which is also what stops iOS zooming on focus. */
+.field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+/* 44px floor and 16px type: gloved hands, and no iOS zoom on focus. */
 input,
 select,
 button {
   font: inherit;
   min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--text);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 button {
-  background: var(--surface);
-  font-weight: 500;
+  background: var(--surface-2);
+  font-weight: 600;
   cursor: pointer;
 }
 
+button:hover:not(:disabled) {
+  border-color: var(--ink-2);
+}
+
+button[type='submit'] {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--action-ink);
+}
+
 button:disabled {
-  color: var(--muted);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-color: var(--rule-soft);
   cursor: not-allowed;
 }
 
-/* Thick and offset so it survives a dusty screen at arm's length. */
+/* Thick and offset so it reads at arm's length on a dusty screen. */
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
 input[type='number'] {
-  width: 7rem;
+  width: 6.5rem;
   text-align: right;
+  font-family: var(--mono);
   font-variant-numeric: tabular-nums;
 }
 
 [aria-invalid='true'] {
-  border-color: var(--danger);
+  border-color: var(--blocked);
   border-width: 2px;
 }
+
+/* ---- tables --------------------------------------------------------- */
 
 table {
   border-collapse: collapse;
   width: 100%;
-  margin-bottom: 8px;
+  font-size: 15px;
 }
 
+/* Row rules stay at the 3:1 mark rather than hairlines — a clerk tracks a line
+   across six columns under glare. The header separates by fill, not weight. */
 th,
 td {
-  border: 1px solid var(--border);
-  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule);
+  padding: 10px;
   text-align: left;
   vertical-align: top;
 }
 
-th {
-  background: var(--surface);
+thead th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
 }
 
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Every quantity in the app is monospaced, so columns line up digit for digit. */
+.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sku {
+  font-family: var(--mono);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* ---- status ---------------------------------------------------------- */
+
+.pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--rule-soft);
+  white-space: nowrap;
+}
+
+.pill-open,
+.pill-partially_received {
+  background: var(--good-soft);
+  color: var(--good);
+  border-color: transparent;
+}
+
+.pill-cancelled,
+.pill-closed {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.pill-quarantine {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-color: transparent;
+}
+
+/* ---- disposition ----------------------------------------------------- */
+
+/* The signature of this screen. Damaged units arrived and count toward the PO's
+   running total, but only the good ones become stock — the bar shows that split
+   at a glance, which no pair of numbers manages on its own. */
+.disposition-figure {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--good);
+  line-height: 1.2;
+}
+
+.disposition-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 6px 0 4px;
+  background: var(--rule-soft);
+}
+
+.disposition-bar .seg-good {
+  background: var(--good);
+}
+
+.disposition-bar .seg-damaged {
+  background: var(--blocked);
+}
+
+.disposition-note {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.disposition-none {
+  color: var(--ink-2);
+}
+
+/* ---- messages -------------------------------------------------------- */
+
 [role='alert'] {
-  color: var(--danger);
+  color: var(--blocked);
+  font-size: 14px;
   font-weight: 500;
 }
 
 .hint {
-  color: var(--muted);
-  font-size: 14px;
-  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: 12px;
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .hint .warn {
-  color: var(--warning);
-  background: var(--warning-bg);
-  padding: 1px 6px;
-  border-radius: 3px;
+  display: inline-block;
+  color: var(--warn);
+  background: var(--warn-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.notice {
+  background: var(--surface-2);
+  border-left: 3px solid var(--rule);
+  padding: 12px;
+  border-radius: 0 6px 6px 0;
+  color: var(--ink-2);
 }

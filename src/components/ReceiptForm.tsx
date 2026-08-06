@@ -226,11 +226,11 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
         <table>
           <thead>
             <tr>
-              <th>#</th>
+              <th className="num">#</th>
               <th>SKU</th>
               <th>Receive now</th>
               <th>Damaged</th>
-              <th>Good → stock</th>
+              <th>To stock</th>
               <th>Put-away location</th>
             </tr>
           </thead>
@@ -257,8 +257,8 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                 [...base, errors[field] && errId(field)].filter(Boolean).join(' ') || undefined
               return (
                 <tr key={line.poLineId}>
-                  <td>{line.lineNumber}</td>
-                  <td>{line.sku}</td>
+                  <td className="num">{line.lineNumber}</td>
+                  <td className="sku">{line.sku}</td>
                   <td>
                     <input
                       type="number"
@@ -307,11 +307,19 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
                   </td>
                   <td id={goodId}>
                     {received === 0 || good < 0 ? (
-                      '—'
+                      <span className="disposition-none">—</span>
                     ) : (
                       <>
-                        <strong>{good}</strong>
-                        {damaged > 0 && ` (${received} received − ${damaged} damaged)`}
+                        <div className="disposition-figure">{good}</div>
+                        <div className="disposition-bar" role="presentation">
+                          <span className="seg-good" style={{ flexGrow: good }} />
+                          <span className="seg-damaged" style={{ flexGrow: damaged }} />
+                        </div>
+                        <div className="disposition-note">
+                          {damaged > 0
+                            ? `${received} received − ${damaged} damaged`
+                            : `all ${received} good`}
+                        </div>
                       </>
                     )}
                   </td>
@@ -342,15 +350,14 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
           </tbody>
         </table>
 
-        <p>
-          <label>
-            Carrier ref{' '}
-            <input
-              value={carrierReference}
-              onChange={(e) => setCarrierReference(e.target.value)}
-            />
-          </label>
-        </p>
+        <div className="field">
+          <label htmlFor="carrier-ref">Carrier ref</label>
+          <input
+            id="carrier-ref"
+            value={carrierReference}
+            onChange={(e) => setCarrierReference(e.target.value)}
+          />
+        </div>
 
         {[...problems, ...formErrors].map((problem) => (
           <p key={problem} role="alert">
@@ -362,16 +369,18 @@ export function ReceiptForm({ purchaseOrder, canReceive, onPosted }: ReceiptForm
             {busy ? 'Posting…' : 'Post receipt'}
           </button>
         ) : (
-          <p>Your role does not permit posting receipts.</p>
+          <p className="notice">Your role does not permit posting receipts.</p>
         )}
       </form>
 
       <ErrorBanner error={error} />
 
       {result && (
-        <p>
+        <p className="notice">
           Receipt #{result.receiptId} posted by {result.receivedBy}. PO is now{' '}
-          <strong>{result.purchaseOrderStatusAfter}</strong>.{' '}
+          <span className={`pill pill-${result.purchaseOrderStatusAfter.toLowerCase()}`}>
+            {result.purchaseOrderStatusAfter.replace('_', ' ')}
+          </span>{' '}
           {result.lines.reduce((sum, l) => sum + l.goodQuantity, 0)} good unit(s) added to
           inventory.
         </p>

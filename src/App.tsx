@@ -6,6 +6,7 @@ import { ReceiptForm } from './components/ReceiptForm'
 import { ReceiptPanel } from './components/ReceiptPanel'
 import { LocationsPanel } from './components/LocationsPanel'
 import { InventoryPanel } from './components/InventoryPanel'
+import { ThemeToggle } from './components/ThemeToggle'
 import type { PurchaseOrderDetail } from './api/types'
 
 /**
@@ -25,38 +26,61 @@ export default function App() {
   }
 
   return (
-    <main>
-      <h1>Warehouse — Inbound Receiving</h1>
+    <>
+      <header className="topbar">
+        <h1 className="brand">
+          Warehouse <span>Receiving</span>
+        </h1>
 
-      <LoginPanel
-        session={session}
-        onSignIn={signIn}
-        onSignOut={signOut}
-        busy={busy}
-        error={authError}
-      />
+        <div className="topbar-actions">
+          <ThemeToggle />
 
-      {session && (
-        <>
-          <PurchaseOrderPanel
-            key={refreshKey}
-            purchaseOrder={purchaseOrder}
-            onLoaded={setPurchaseOrder}
-          />
+          {session && (
+            <div className="session">
+              <span>
+                {session.username}{' '}
+                {session.roles.map((role) => (
+                  <span key={role} className="pill">
+                    {role}
+                  </span>
+                ))}
+              </span>
+              <button onClick={signOut}>Sign out</button>
+            </div>
+          )}
+        </div>
+      </header>
 
-          <ReceiptForm
-            purchaseOrder={purchaseOrder}
-            canReceive={session.canReceive}
-            onPosted={handlePosted}
-          />
+      <div className="workspace">
+        <div className="stack">
+          {session ? (
+            <>
+              <PurchaseOrderPanel
+                key={refreshKey}
+                purchaseOrder={purchaseOrder}
+                onLoaded={setPurchaseOrder}
+              />
 
-          <ReceiptPanel receiptId={postedReceiptId} />
+              <ReceiptForm
+                purchaseOrder={purchaseOrder}
+                canReceive={session.canReceive}
+                onPosted={handlePosted}
+              />
 
-          <InventoryPanel refreshKey={refreshKey} />
+              <ReceiptPanel receiptId={postedReceiptId} />
+            </>
+          ) : (
+            <LoginPanel onSignIn={signIn} busy={busy} error={authError} />
+          )}
+        </div>
 
-          <LocationsPanel />
-        </>
-      )}
-    </main>
+        {session && (
+          <aside className="stack">
+            <InventoryPanel refreshKey={refreshKey} />
+            <LocationsPanel />
+          </aside>
+        )}
+      </div>
+    </>
   )
 }

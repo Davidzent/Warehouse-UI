@@ -55,17 +55,18 @@ export function ReceiptPanel({ receiptId }: ReceiptPanelProps) {
       <h2>Receipt</h2>
 
       <form onSubmit={submit}>
-        <label>
-          Receipt id{' '}
+        <div className="field">
+          <label htmlFor="receipt-id">Receipt id</label>
           <input
+            id="receipt-id"
             inputMode="numeric"
             value={lookupId}
             onChange={(e) => setLookupId(e.target.value)}
           />
-        </label>{' '}
-        <button type="submit" disabled={busy || !lookupId}>
-          {busy ? 'Loading…' : 'Load'}
-        </button>
+          <button type="submit" disabled={busy || !lookupId}>
+            {busy ? 'Loading…' : 'Load receipt'}
+          </button>
+        </div>
       </form>
 
       <ErrorBanner error={error} />
@@ -80,7 +81,7 @@ export function ReceiptPanel({ receiptId }: ReceiptPanelProps) {
             {receipt.purchaseOrderId} · recorded by {receipt.receivedBy} on{' '}
             {new Date(receipt.receivedAt).toLocaleString()}
           </p>
-          <p>
+          <p className="meta">
             carrier {receipt.carrierReference ?? '—'} · notes {receipt.notes ?? '—'}
           </p>
 
@@ -89,19 +90,19 @@ export function ReceiptPanel({ receiptId }: ReceiptPanelProps) {
               <tr>
                 <th>SKU</th>
                 <th>Location</th>
-                <th>Received</th>
-                <th>Damaged</th>
-                <th>Good → stock</th>
+                <th className="num">Received</th>
+                <th className="num">Damaged</th>
+                <th className="num">To stock</th>
               </tr>
             </thead>
             <tbody>
               {receipt.lines.map((line) => (
                 <tr key={line.receiptLineId}>
-                  <td>{line.sku}</td>
-                  <td>{line.locationCode}</td>
-                  <td>{line.quantityReceived}</td>
-                  <td>{line.quantityDamaged}</td>
-                  <td>{line.quantityReceived - line.quantityDamaged}</td>
+                  <td className="sku">{line.sku}</td>
+                  <td className="sku">{line.locationCode}</td>
+                  <td className="num">{line.quantityReceived}</td>
+                  <td className="num">{line.quantityDamaged}</td>
+                  <td className="num">{line.quantityReceived - line.quantityDamaged}</td>
                 </tr>
               ))}
             </tbody>

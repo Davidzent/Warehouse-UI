@@ -34,17 +34,18 @@ export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPan
     <section>
       <h2>Purchase order</h2>
       <form onSubmit={load}>
-        <label>
-          PO id{' '}
+        <div className="field">
+          <label htmlFor="po-id">PO id</label>
           <input
+            id="po-id"
             inputMode="numeric"
             value={poId}
             onChange={(e) => setPoId(e.target.value)}
           />
-        </label>{' '}
-        <button type="submit" disabled={busy}>
-          {busy ? 'Loading…' : 'Load'}
-        </button>
+          <button type="submit" disabled={busy}>
+            {busy ? 'Loading…' : 'Load order'}
+          </button>
+        </div>
       </form>
 
       <ErrorBanner error={error} />
@@ -55,11 +56,12 @@ export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPan
       {purchaseOrder && (
         <>
           <p>
-            <strong>{purchaseOrder.poNumber}</strong> — {purchaseOrder.vendorName} — status{' '}
-            <strong>{purchaseOrder.status}</strong>
-            {!purchaseOrder.receivable && ' (not receivable)'}
+            <strong>{purchaseOrder.poNumber}</strong> — {purchaseOrder.vendorName}{' '}
+            <span className={`pill pill-${purchaseOrder.status.toLowerCase()}`}>
+              {purchaseOrder.status.replace('_', ' ')}
+            </span>
           </p>
-          <p>
+          <p className="meta">
             ordered {purchaseOrder.orderDate} · expected {purchaseOrder.expectedDate ?? '—'} ·
             created by {purchaseOrder.createdBy}
           </p>
@@ -70,25 +72,25 @@ export function PurchaseOrderPanel({ purchaseOrder, onLoaded }: PurchaseOrderPan
           <table>
             <thead>
               <tr>
-                <th>#</th>
+                <th className="num">#</th>
                 <th>SKU</th>
                 <th>Description</th>
-                <th>Ordered</th>
-                <th>Received</th>
-                <th>Remaining</th>
-                <th>Max now (110%)</th>
+                <th className="num">Ordered</th>
+                <th className="num">Received</th>
+                <th className="num">Remaining</th>
+                <th className="num">Max now</th>
               </tr>
             </thead>
             <tbody>
               {purchaseOrder.lines.map((line) => (
                 <tr key={line.poLineId}>
-                  <td>{line.lineNumber}</td>
-                  <td>{line.sku}</td>
+                  <td className="num">{line.lineNumber}</td>
+                  <td className="sku">{line.sku}</td>
                   <td>{line.productDescription}</td>
-                  <td>{line.quantityOrdered}</td>
-                  <td>{line.quantityReceived}</td>
-                  <td>{line.remainingQuantity}</td>
-                  <td>{line.maxReceivableNow}</td>
+                  <td className="num">{line.quantityOrdered}</td>
+                  <td className="num">{line.quantityReceived}</td>
+                  <td className="num">{line.remainingQuantity}</td>
+                  <td className="num">{line.maxReceivableNow}</td>
                 </tr>
               ))}
             </tbody>

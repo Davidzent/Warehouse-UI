@@ -47,8 +47,12 @@ export function LocationsPanel() {
           <tbody>
             {locations.map((location) => (
               <tr key={location.locationId}>
-                <td>{location.locationCode}</td>
-                <td>{location.locationType}</td>
+                <td className="sku">{location.locationCode}</td>
+                <td>
+                  <span className={`pill pill-${location.locationType.toLowerCase()}`}>
+                    {location.locationType}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>

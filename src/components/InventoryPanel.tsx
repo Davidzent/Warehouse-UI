@@ -47,18 +47,19 @@ export function InventoryPanel({ refreshKey }: InventoryPanelProps) {
           <thead>
             <tr>
               <th>SKU</th>
-              <th>Description</th>
               <th>Location</th>
-              <th>On hand</th>
+              <th className="num">On hand</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.inventoryId}>
-                <td>{row.sku}</td>
-                <td>{row.productDescription}</td>
-                <td>{row.locationCode}</td>
-                <td>{row.quantityOnHand}</td>
+                <td>
+                  <span className="sku">{row.sku}</span>
+                  <div className="disposition-note">{row.productDescription}</div>
+                </td>
+                <td className="sku">{row.locationCode}</td>
+                <td className="num">{row.quantityOnHand}</td>
               </tr>
             ))}
           </tbody>
