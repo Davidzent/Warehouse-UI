@@ -55,6 +55,14 @@ against a **Supabase** Postgres database.
   rest of the app shouldn't repeat: the base URL, attaching the bearer token, deciding
   what counts as failure, and turning the API's RFC 7807 `ProblemDetail` bodies into a
   typed `ApiError`.
+- **A cold start is explained, not endured.** The API sleeps on free hosting, so the first
+  request after an idle spell can take the better part of a minute. Requests abort at 90s,
+  and anything still running after 3s puts a message on the sign-in panel — otherwise the
+  button just spins and the demo reads as broken.
+- **Only the newest response may write.** Two refreshes race, and the slower one settling
+  last would overwrite fresher rows with stale ones — silently, since both succeeded.
+  [`useLatestRequest`](src/hooks/useLatestRequest.ts) hands out a ticket per request and
+  every panel checks it before touching state.
 - **Auth lives in one directory.** [`src/auth/`](src/auth) acquires the token, decodes
   its claims, stores it, hands it to the client, and clears it — on sign-out and on any
   `401`. No component ever receives a token, so swapping the development endpoint for a
@@ -64,7 +72,8 @@ against a **Supabase** Postgres database.
   them — including `damagedWithinReceived`, which is named after a Bean Validation
   getter and matches no field on the form. Everything else becomes a sentence: a
   business conflict is passed through verbatim, because the server writes those for
-  people, and a `500` never surfaces what actually broke.
+  people, a `429` carries the wait the API asks for, and a `500` never surfaces what
+  actually broke.
 - **Receipt form state is derived, not synchronised.** Loading a different PO resets the
   line inputs during render rather than in an effect, so the form never paints a frame
   of the previous order's numbers.
@@ -84,6 +93,25 @@ against a **Supabase** Postgres database.
 | `VITE_API_BASE_URL` | production | Absolute origin of the deployed API. **The build fails in CI if this is empty** — an empty value would aim every request at the hosting origin, which serves no API. |
 
 Copy [`.env.example`](.env.example) to `.env.local` for local development.
+
+The API rate-limits per client IP — token minting most strictly, then writes, then reads —
+and answers a refusal with `429`, a `Retry-After`, and a `ProblemDetail` whose `detail`
+names the wait in seconds. That message is what the UI shows.
+
+## Tests
+
+Vitest on jsdom, run from the repo root:
+
+```bash
+pnpm --filter warehouse test
+```
+
+They cover the request-ordering guard and the inventory panel, including the race the
+guard exists for: a slow response settling after a newer one must not overwrite it.
+Remove the guard and exactly that test fails.
+
+Vitest strips types rather than checking them, so `pnpm --filter warehouse build` is still
+what catches a type error in a test file.
 
 ## Run it
 
@@ -105,6 +133,10 @@ profile is what exposes the token endpoint:
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+
+## License
+
+Released under the **ISC License** — see [`LICENSE`](LICENSE).
 
 ---
 
