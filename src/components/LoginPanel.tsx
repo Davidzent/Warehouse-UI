@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import type { Role } from '../api/types'
+import { COLD_START_NOTICE } from '../auth/useAuth'
 
 interface LoginPanelProps {
   onSignIn: (username: string, role: Role) => void
   busy: boolean
   error: string | null
+  /** A request is running long enough that silence would read as a broken demo. */
+  waking: boolean
 }
 
 /**
  * Temporary sign-in against the dev token endpoint.
  */
-export function LoginPanel({ onSignIn, busy, error }: LoginPanelProps) {
+export function LoginPanel({ onSignIn, busy, error, waking }: LoginPanelProps) {
   const [username, setUsername] = useState('david')
   const [role, setRole] = useState<Role>('CLERK')
 
@@ -46,6 +49,12 @@ export function LoginPanel({ onSignIn, busy, error }: LoginPanelProps) {
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
+
+      {waking && (
+        <p className="notice" role="status">
+          {COLD_START_NOTICE}
+        </p>
+      )}
 
       {error && <p role="alert">{error}</p>}
     </section>

@@ -13,7 +13,7 @@ import type { PurchaseOrderDetail } from './api/types'
  * Inbound receiving screen.
  */
 export default function App() {
-  const { session, signIn, signOut, error: authError, busy } = useAuth()
+  const { session, signIn, signOut, error: authError, busy, waking } = useAuth()
   const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrderDetail | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [postedReceiptId, setPostedReceiptId] = useState<number | null>(null)
@@ -70,7 +70,7 @@ export default function App() {
               <ReceiptPanel receiptId={postedReceiptId} />
             </>
           ) : (
-            <LoginPanel onSignIn={signIn} busy={busy} error={authError} />
+            <LoginPanel onSignIn={signIn} busy={busy} error={authError} waking={waking} />
           )}
         </div>
 

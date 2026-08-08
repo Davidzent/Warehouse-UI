@@ -32,8 +32,18 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError
 }
 
+// The API sleeps on Render's free tier, so the first request after an idle spell
+// pays a cold start. Long enough to survive one, short enough to still give up.
+const TIMEOUT_MS = 90_000
+
+// Past this a request is a cold start rather than a slow network, which is worth
+// saying out loud instead of leaving a button spinning.
+const SLOW_AFTER_MS = 3_000
+
 let authToken: string | null = null
 let unauthorizedHandler: (() => void) | null = null
+let slowHandler: ((slow: boolean) => void) | null = null
+let slowRequests = 0
 
 /** Set by the auth module on sign-in, cleared on sign-out and on any 401. */
 export function setAuthToken(token: string | null) {
@@ -46,6 +56,14 @@ export function setAuthToken(token: string | null) {
  */
 export function setUnauthorizedHandler(handler: (() => void) | null) {
   unauthorizedHandler = handler
+}
+
+/**
+ * Notified while any request is taking long enough to look broken. Counted, not
+ * a flag: panels load in parallel and a fast one must not clear a slow one.
+ */
+export function setSlowHandler(handler: ((slow: boolean) => void) | null) {
+  slowHandler = handler
 }
 
 interface RequestOptions {
@@ -61,11 +79,35 @@ export async function request<T>(
   if (authToken) headers.Authorization = `Bearer ${authToken}`
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
+  const controller = new AbortController()
+  const expiry = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  let markedSlow = false
+  const slowTimer = setTimeout(() => {
+    markedSlow = true
+    if (++slowRequests === 1) slowHandler?.(true)
+  }, SLOW_AFTER_MS)
+
+  let response: Response
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    })
+  } catch {
+    // The only abort we issue is the timeout above; anything else is the network.
+    throw new ApiError({
+      status: 0,
+      detail: controller.signal.aborted
+        ? 'The server did not respond in time. It may still be starting up — try again.'
+        : 'Could not reach the server. Check the connection and try again.',
+    })
+  } finally {
+    clearTimeout(expiry)
+    clearTimeout(slowTimer)
+    if (markedSlow && --slowRequests === 0) slowHandler?.(false)
+  }
 
   // 204 and empty bodies are valid responses; don't assume JSON.
   const text = await response.text()

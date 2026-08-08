@@ -29,6 +29,9 @@ function messageFor(error: unknown): string {
       return error.detail ?? 'That record does not exist.'
     case 409:
       return error.detail ?? 'This delivery conflicts with the order as it stands.'
+    // The API rate-limits per IP; its detail already carries the wait in seconds.
+    case 429:
+      return error.detail ?? 'Too many requests. Wait a moment and try again.'
     case 500:
       return 'Something went wrong on our side. Wait a moment and try again.'
     default:

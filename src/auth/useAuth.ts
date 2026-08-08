@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { setAuthToken, setUnauthorizedHandler } from '../api/client'
+import { setAuthToken, setSlowHandler, setUnauthorizedHandler } from '../api/client'
 import { fetchDevToken } from '../api/receiving'
 import type { Role } from '../api/types'
 import { decodeToken, RECEIVING_ROLE } from './token'
@@ -11,6 +11,10 @@ export interface Session {
   canReceive: boolean
 }
 
+/** The API is idle-stopped on free hosting, so a first request can take a minute. */
+export const COLD_START_NOTICE =
+  'Still waiting on the server. It sleeps when idle and can take up to a minute to wake.'
+
 // sessionStorage, not localStorage: this is an HS256 token signed with a secret
 // the dev endpoint hands to anyone, so it should die with the tab rather than
 // sit on disk between browser sessions.
@@ -20,6 +24,7 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(restore)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [waking, setWaking] = useState(false)
 
   const endSession = useCallback((message: string | null) => {
     sessionStorage.removeItem(STORAGE_KEY)
@@ -53,7 +58,12 @@ export function useAuth() {
     return () => setUnauthorizedHandler(null)
   }, [endSession])
 
-  return { session, signIn, signOut, error, busy }
+  useEffect(() => {
+    setSlowHandler(setWaking)
+    return () => setSlowHandler(null)
+  }, [])
+
+  return { session, signIn, signOut, error, busy, waking }
 }
 
 /**
