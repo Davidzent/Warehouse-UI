@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchLocations } from '../api/receiving'
 import type { Location } from '../api/types'
+import { useLatestRequest } from '../hooks/useLatestRequest'
 import { ErrorBanner } from './ErrorBanner'
 
 /** Every put-away location. The route returns all of them — there is no paging. */
@@ -8,18 +9,23 @@ export function LocationsPanel() {
   const [locations, setLocations] = useState<Location[] | null>(null)
   const [error, setError] = useState<unknown>(null)
 
+  const beginRequest = useLatestRequest()
+
   const load = useCallback(() => {
+    const isLatest = beginRequest()
     fetchLocations().then(
       (rows) => {
+        if (!isLatest()) return
         setLocations(rows)
         setError(null)
       },
       (failure) => {
+        if (!isLatest()) return
         setLocations(null)
         setError(failure)
       },
     )
-  }, [])
+  }, [beginRequest])
 
   useEffect(() => {
     load()

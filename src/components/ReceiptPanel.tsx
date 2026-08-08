@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchReceipt } from '../api/receiving'
 import type { ReceiptDetail } from '../api/types'
+import { useLatestRequest } from '../hooks/useLatestRequest'
 import { ErrorBanner } from './ErrorBanner'
 
 interface ReceiptPanelProps {
@@ -15,21 +16,30 @@ export function ReceiptPanel({ receiptId }: ReceiptPanelProps) {
   const [error, setError] = useState<unknown>(null)
   const [busy, setBusy] = useState(false)
 
+  const beginRequest = useLatestRequest()
+
   // Settles only inside the promise callbacks, so the auto-load effect below
-  // never sets state synchronously.
+  // never sets state synchronously. Resolves false when a newer lookup has
+  // already superseded this one, so it must not clear that lookup's busy flag.
   const show = useCallback(
-    (id: string | number) =>
-      fetchReceipt(id).then(
+    (id: string | number) => {
+      const isLatest = beginRequest()
+      return fetchReceipt(id).then(
         (loaded) => {
+          if (!isLatest()) return false
           setReceipt(loaded)
           setError(null)
+          return true
         },
         (failure) => {
+          if (!isLatest()) return false
           setReceipt(null)
           setError(failure)
+          return true
         },
-      ),
-    [],
+      )
+    },
+    [beginRequest],
   )
 
   // Adjust the visible id during render rather than syncing it from an effect.
@@ -41,13 +51,13 @@ export function ReceiptPanel({ receiptId }: ReceiptPanelProps) {
   }
 
   useEffect(() => {
-    if (receiptId !== null) show(receiptId).finally(() => setBusy(false))
+    if (receiptId !== null) show(receiptId).then((latest) => latest && setBusy(false))
   }, [receiptId, show])
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
-    show(lookupId).finally(() => setBusy(false))
+    show(lookupId).then((latest) => latest && setBusy(false))
   }
 
   return (

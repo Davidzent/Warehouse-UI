@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchInventory } from '../api/receiving'
 import type { InventoryRow } from '../api/types'
+import { useLatestRequest } from '../hooks/useLatestRequest'
 import { ErrorBanner } from './ErrorBanner'
 
 interface InventoryPanelProps {
@@ -15,18 +16,23 @@ export function InventoryPanel({ refreshKey }: InventoryPanelProps) {
   const [rows, setRows] = useState<InventoryRow[] | null>(null)
   const [error, setError] = useState<unknown>(null)
 
+  const beginRequest = useLatestRequest()
+
   const load = useCallback(() => {
+    const isLatest = beginRequest()
     fetchInventory().then(
       (loaded) => {
+        if (!isLatest()) return
         setRows(loaded)
         setError(null)
       },
       (failure) => {
+        if (!isLatest()) return
         setRows(null)
         setError(failure)
       },
     )
-  }, [])
+  }, [beginRequest])
 
   useEffect(() => {
     load()
