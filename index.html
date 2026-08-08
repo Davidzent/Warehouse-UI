@@ -9,10 +9,8 @@
       name="description"
       content="A receiving desk for a Spring Boot warehouse API: look up a purchase order, record partial deliveries and damaged units against the 110% over-receipt rule, and watch stock follow. Live demo by David Guijosa."
     />
-    <!-- No pre-paint theme script here, so the bar follows the OS rather than
-         claiming a theme the app has not applied yet. -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#171b21" />
+    <!-- Tracks --paper, the page background, and is rewritten by the script below. -->
+    <meta name="theme-color" content="#eef1f6" />
     <link rel="canonical" href="https://www.zntsns.com/warehouse/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="zntsns — David Guijosa Infante" />
@@ -32,6 +30,27 @@
       content="React and TypeScript front end for a Spring Boot receiving API. Partial deliveries, over-shipments, damaged units, and JWT-gated roles."
     />
     <meta name="twitter:image" content="https://www.zntsns.com/og.jpg" />
+    <script>
+      // Runs before first paint so a stored preference never flashes the other
+      // theme. Key and fallback must stay in step with src/theme.ts, which
+      // cannot be imported here — this has to execute before the bundle loads.
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem("warehouse.theme");
+        } catch (e) {
+          theme = null;
+        }
+        if (theme !== "light" && theme !== "dark") {
+          theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+        }
+        document.documentElement.dataset.theme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", theme === "dark" ? "#0e1115" : "#eef1f6");
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
