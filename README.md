@@ -106,8 +106,19 @@ Vitest on jsdom, run from the repo root:
 pnpm --filter warehouse test
 ```
 
-They cover the request-ordering guard and the inventory panel, including the race the
-guard exists for: a slow response settling after a newer one must not overwrite it.
+25 tests over three areas:
+
+- **The request-ordering guard**, including the race it exists for — a slow response
+  settling after a newer one must not overwrite it.
+- **The inventory panel** — loading, empty stock, and surfacing a failure rather than
+  stale rows.
+- **The receipt quantity rules**, which is where the domain actually lives: damaged units
+  subtracted from what reaches stock, the 110% cap refused, an over-shipment *inside* the
+  cap warned about but still allowed, and `damagedWithinReceived` landing on the damaged
+  input rather than on no input at all.
+
+The last group is checked by mutation, not just by passing: deleting the damaged split or
+the field-error alias fails exactly those tests and nothing else.
 Remove the guard and exactly that test fails.
 
 Vitest strips types rather than checking them, so `pnpm --filter warehouse build` is still
